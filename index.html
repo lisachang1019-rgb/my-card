@@ -2,66 +2,125 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>抽獎測試版</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>幸運抽卡機</title>
     <style>
-        body { background: #121212; color: white; text-align: center; font-family: sans-serif; padding: 20px; }
-        .box { background: #1e1e1e; padding: 20px; border-radius: 15px; max-width: 350px; margin: auto; }
-        input { width: 80%; padding: 10px; margin: 10px 0; border-radius: 5px; border: 1px solid #333; background: #2a2a2a; color: white; }
-        button { background: #ff4757; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        button:disabled { background: #444; }
-        #status { margin-top: 15px; color: #eccc68; font-size: 14px; }
+        body { font-family: -apple-system, sans-serif; background: #121212; color: white; text-align: center; margin: 0; padding: 20px; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+        .container { max-width: 400px; width: 100%; }
+        .input-group { margin-bottom: 15px; text-align: left; background: #1e1e1e; padding: 15px; border-radius: 12px; }
+        label { display: block; margin-bottom: 8px; color: #aaa; font-size: 14px; }
+        input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #333; background: #2a2a2a; color: white; box-sizing: border-box; font-size: 16px; }
+        .card-area { width: 260px; height: 380px; background: #1e1e1e; border: 2px solid #333; margin: 20px auto; border-radius: 15px; display: flex; align-items: center; justify-content: center; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        #card-img { width: 100%; height: 100%; object-fit: cover; display: none; }
+        .btn { width: 100%; background: #ff4757; color: white; border: none; padding: 16px; font-size: 18px; font-weight: bold; border-radius: 50px; cursor: pointer; box-shadow: 0 4px 0 #cc3a47; }
+        .btn:disabled { background: #444; box-shadow: none; color: #888; cursor: not-allowed; }
+        #card-name { margin: 15px; font-size: 22px; color: #eccc68; font-weight: bold; min-height: 1.5em; }
+        .info { margin-top: 15px; color: #888; font-size: 14px; }
+        #secret-reset { color: #121212; cursor: pointer; margin-top: 30px; font-size: 12px; user-select: none; }
     </style>
 </head>
 <body>
-    <div class="box">
-        <h2>✨ 抽獎機除錯版 ✨</h2>
-        <input type="text" id="user-name" placeholder="輸入暱稱...">
-        <br>
-        <button id="draw-btn" onclick="testDraw()">點我抽卡</button>
-        <div id="status">準備就緒</div>
-        <div id="result-name" style="margin-top:10px; font-weight:bold; color:#ff4757;"></div>
+    <div class="container">
+        <h2>✨ 限量抽卡機 ✨</h2>
+        
+        <div class="input-group">
+            <label>輸入暱稱後開始抽獎：</label>
+            <input type="text" id="user-name" placeholder="請輸入你的名字..." oninput="checkStatus()">
+        </div>
+
+        <div class="card-area">
+            <span id="msg">等待中...</span>
+            <img id="card-img" src="">
+        </div>
+        
+        <div id="card-name"></div>
+        <button id="draw-btn" class="btn" onclick="draw()" disabled>請先輸入暱稱</button>
+        <div class="info">剩餘抽獎次數：<span id="rem-count">--</span></div>
+        <div id="secret-reset" onclick="resetAll()">.</div>
     </div>
 
     <script>
-        // --- 這是根據你提供的截圖填寫的資料 ---
-        const FORM_ID = "1FAIpQLSdKRudwWeJy9a_iRpD2JKQqERtOteRwF2P4phoHtPQpqYVX_A"; 
-        const ENTRY_ID = "entry.1197525866"; // 你網址中的編號
+        // ================= 設定區 (請務必檢查編號) =================
+        const FORM_ID = "193JTpxchU-FJUy7Ioy8Qx7t2bFZSimh9Y6A-FrsiXEc"; 
+        const ENTRY_NAME = "entry.1434310166"; // <--- 這裡要改！！
+        const ENTRY_CARD = "entry.1197525866"; // 這是你截圖中的卡片編號
+        const MAX_DRAWS = 3; 
         
-        function testDraw() {
+        // 可以在這裡繼續增加卡片
+        const cards = [
+            { name: "隱藏版 SSR", weight: 1, url: "https://via.placeholder.com/260x380?text=SSR" },
+            { name: "普通卡 01", weight: 50, url: "https://via.placeholder.com/260x380?text=Card01" },
+            { name: "普通卡 02", weight: 50, url: "https://via.placeholder.com/260x380?text=Card02" }
+        ];
+        // =========================================================
+
+        let drawCount = localStorage.getItem('myDrawCount') ? parseInt(localStorage.getItem('myDrawCount')) : 0;
+        const FORM_URL = `https://docs.google.com/forms/d/e/${FORM_ID}/formResponse`;
+
+        updateUI();
+
+        function checkStatus() {
             const name = document.getElementById('user-name').value.trim();
-            const statusDiv = document.getElementById('status');
-            
-            if (!name) {
-                alert("請先輸入暱稱！");
-                return;
+            const btn = document.getElementById('draw-btn');
+            if (drawCount >= MAX_DRAWS) {
+                btn.disabled = true;
+                btn.innerText = "次數已用完";
+            } else if (name === "") {
+                btn.disabled = true;
+                btn.innerText = "請先輸入暱稱";
+            } else {
+                btn.disabled = false;
+                btn.innerText = "點我抽卡！";
             }
+        }
 
-            statusDiv.innerText = "正在傳送至表單...";
-            document.getElementById('draw-btn').disabled = true;
+        function draw() {
+            const userName = document.getElementById('user-name').value.trim();
+            if (!userName || drawCount >= MAX_DRAWS) return;
 
-            const cardName = "測試卡片";
-            document.getElementById('result-name').innerText = "抽中：" + cardName;
+            const totalWeight = cards.reduce((s, c) => s + c.weight, 0);
+            let random = Math.random() * totalWeight;
+            let result = cards[0];
+            for (const card of cards) { random -= card.weight; if (random <= 0) { result = card; break; } }
 
-            // 構建傳送資料
+            document.getElementById('card-img').src = result.url;
+            document.getElementById('card-img').style.display = 'block';
+            document.getElementById('msg').style.display = 'none';
+            document.getElementById('card-name').innerText = result.name;
+
+            // 發送至 Google 表單
+            sendToGoogle(userName, result.name);
+
+            drawCount++;
+            localStorage.setItem('myDrawCount', drawCount);
+            updateUI();
+            checkStatus();
+        }
+
+        function sendToGoogle(name, card) {
             const formData = new FormData();
-            // 嘗試把暱稱和卡片都傳到同一個編號試試看 (因為你網址只有一個編號)
-            formData.append(ENTRY_ID, name + " - " + cardName);
-
-            const FORM_URL = `https://docs.google.com/forms/d/e/${FORM_ID}/formResponse`;
+            formData.append(ENTRY_NAME, name);
+            formData.append(ENTRY_CARD, card);
 
             fetch(FORM_URL, {
                 method: "POST",
                 mode: "no-cors",
                 body: formData
-            }).then(() => {
-                statusDiv.innerText = "✅ 傳送指令已發出！請檢查表單。";
-                statusDiv.style.color = "#2ecc71";
-                alert("傳送完畢！請去 Google 表單看有沒有增加一筆記錄。");
-            }).catch((err) => {
-                statusDiv.innerText = "❌ 傳送失敗，請檢查網路。";
-                console.error(err);
             });
+        }
+
+        function updateUI() {
+            document.getElementById('rem-count').innerText = MAX_DRAWS - drawCount;
+        }
+
+        function resetAll() {
+            if (confirm("管理員你好，要重置這次數嗎？")) {
+                localStorage.removeItem('myDrawCount');
+                drawCount = 0;
+                updateUI();
+                checkStatus();
+                alert("已重置！");
+            }
         }
     </script>
 </body>
