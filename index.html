@@ -5,19 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>幸運抽卡機</title>
     <style>
-        body { font-family: -apple-system, "Helvetica Neue", sans-serif; background: #121212; color: white; text-align: center; margin: 0; padding: 20px; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+        body { font-family: -apple-system, sans-serif; background: #121212; color: white; text-align: center; margin: 0; padding: 20px; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
         .container { max-width: 400px; width: 100%; }
-        .input-group { margin-bottom: 15px; text-align: left; background: #1e1e1e; padding: 15px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .input-group { margin-bottom: 15px; text-align: left; background: #1e1e1e; padding: 15px; border-radius: 12px; }
         label { display: block; margin-bottom: 8px; color: #aaa; font-size: 14px; }
         input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #333; background: #2a2a2a; color: white; box-sizing: border-box; font-size: 16px; }
-        .card-area { width: 260px; height: 380px; background: #1e1e1e; border: 2px solid #333; margin: 20px auto; border-radius: 15px; display: flex; align-items: center; justify-content: center; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative; }
+        .card-area { width: 260px; height: 380px; background: #1e1e1e; border: 2px solid #333; margin: 20px auto; border-radius: 15px; display: flex; align-items: center; justify-content: center; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         #card-img { width: 100%; height: 100%; object-fit: cover; display: none; }
-        #msg { color: #555; }
-        .btn { width: 100%; background: #ff4757; color: white; border: none; padding: 16px; font-size: 18px; font-weight: bold; border-radius: 50px; cursor: pointer; box-shadow: 0 4px 0 #cc3a47; transition: 0.2s; }
+        .btn { width: 100%; background: #ff4757; color: white; border: none; padding: 16px; font-size: 18px; font-weight: bold; border-radius: 50px; cursor: pointer; box-shadow: 0 4px 0 #cc3a47; }
         .btn:disabled { background: #444; box-shadow: none; color: #888; cursor: not-allowed; }
-        #card-name { margin: 15px; font-size: 22px; color: #eccc68; font-weight: bold; min-height: 1.5em; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        #card-name { margin: 15px; font-size: 22px; color: #eccc68; font-weight: bold; min-height: 1.5em; }
         .info { margin-top: 15px; color: #888; font-size: 14px; }
-        /* 隱藏的重置按鈕 */
         #secret-reset { color: #121212; cursor: pointer; margin-top: 30px; font-size: 12px; user-select: none; }
     </style>
 </head>
@@ -36,29 +34,25 @@
         </div>
         
         <div id="card-name"></div>
-        
         <button id="draw-btn" class="btn" onclick="draw()" disabled>請先輸入暱稱</button>
-        
         <div class="info">剩餘抽獎次數：<span id="rem-count">--</span></div>
-        
         <div id="secret-reset" onclick="resetAll()">.</div>
     </div>
 
     <script>
-        // ================= 設定區 =================
-        const FORM_ID = "193JTpxchU-FJUy7Ioy8Qx7t2bFZSimh9Y6A-FrsiXEc"; // 你的表單 ID
-        const ENTRY_NAME = "entry.1197525866"; // 例如 entry.12345
+        // ================= 設定區 (請務必檢查編號) =================
+        const FORM_ID = "193JTpxchU-FJUy7Ioy8Qx7t2bFZSimh9Y6A-FrsiXEc"; 
+        const ENTRY_NAME = "entry.1197525866; // <--- 這裡要改！！
+        const ENTRY_CARD = "entry.1197525866"; // 這是你截圖中的卡片編號
+        const MAX_DRAWS = 3; 
         
-        const MAX_DRAWS = 3; // 每人限制次數
-        
-        // 卡片清單 (可以複製貼上到 200 張)
+        // 可以在這裡繼續增加卡片
         const cards = [
             { name: "隱藏版 SSR", weight: 1, url: "https://via.placeholder.com/260x380?text=SSR" },
             { name: "普通卡 01", weight: 50, url: "https://via.placeholder.com/260x380?text=Card01" },
-            { name: "普通卡 02", weight: 50, url: "https://via.placeholder.com/260x380?text=Card02" },
-            // ... 繼續往下加
+            { name: "普通卡 02", weight: 50, url: "https://via.placeholder.com/260x380?text=Card02" }
         ];
-        // ==========================================
+        // =========================================================
 
         let drawCount = localStorage.getItem('myDrawCount') ? parseInt(localStorage.getItem('myDrawCount')) : 0;
         const FORM_URL = `https://docs.google.com/forms/d/e/${FORM_ID}/formResponse`;
@@ -68,7 +62,6 @@
         function checkStatus() {
             const name = document.getElementById('user-name').value.trim();
             const btn = document.getElementById('draw-btn');
-            
             if (drawCount >= MAX_DRAWS) {
                 btn.disabled = true;
                 btn.innerText = "次數已用完";
@@ -85,30 +78,19 @@
             const userName = document.getElementById('user-name').value.trim();
             if (!userName || drawCount >= MAX_DRAWS) return;
 
-            // 抽獎邏輯
             const totalWeight = cards.reduce((s, c) => s + c.weight, 0);
             let random = Math.random() * totalWeight;
             let result = cards[0];
-            
-            for (const card of cards) {
-                random -= card.weight;
-                if (random <= 0) {
-                    result = card;
-                    break;
-                }
-            }
+            for (const card of cards) { random -= card.weight; if (random <= 0) { result = card; break; } }
 
-            // 顯示結果
-            const img = document.getElementById('card-img');
-            img.src = result.url;
-            img.style.display = 'block';
+            document.getElementById('card-img').src = result.url;
+            document.getElementById('card-img').style.display = 'block';
             document.getElementById('msg').style.display = 'none';
             document.getElementById('card-name').innerText = result.name;
 
-            // 自動發送至 Google 表單
+            // 發送至 Google 表單
             sendToGoogle(userName, result.name);
 
-            // 更新次數
             drawCount++;
             localStorage.setItem('myDrawCount', drawCount);
             updateUI();
@@ -137,7 +119,7 @@
                 drawCount = 0;
                 updateUI();
                 checkStatus();
-                alert("已重置，可以再抽了！");
+                alert("已重置！");
             }
         }
     </script>
