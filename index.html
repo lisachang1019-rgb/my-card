@@ -3,36 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>限量抽小卡</title>
+    <title>抽卡紀錄版</title>
     <style>
         body { font-family: -apple-system, sans-serif; background: #121212; color: white; text-align: center; margin: 0; padding: 20px; }
         .container { max-width: 400px; margin: auto; }
-        .card-area { width: 260px; height: 380px; background: #1e1e1e; border: 2px solid #333; margin: 20px auto; border-radius: 15px; display: flex; align-items: center; justify-content: center; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .card-area { width: 260px; height: 380px; background: #1e1e1e; border: 2px solid #333; margin: 20px auto; border-radius: 15px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
         #card-img { width: 100%; height: 100%; object-fit: cover; display: none; }
-        .btn { background: #ff4757; color: white; border: none; padding: 16px 40px; font-size: 18px; font-weight: bold; border-radius: 50px; cursor: pointer; box-shadow: 0 4px 0 #cc3a47; transition: 0.2s; }
-        .btn:disabled { background: #555; box-shadow: none; cursor: not-allowed; }
+        .btn { background: #ff4757; color: white; border: none; padding: 16px 40px; font-size: 18px; font-weight: bold; border-radius: 50px; cursor: pointer; }
+        .btn:disabled { background: #555; cursor: not-allowed; }
         #card-name { margin: 15px; font-size: 20px; color: #eccc68; min-height: 1.5em; }
-        #count-info { color: #888; font-size: 14px; margin-top: 10px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>✨ 限量抽小卡 ✨</h2>
+        <h2>✨ 抽卡紀錄機 ✨</h2>
         <div class="card-area">
             <span id="msg">等待抽取...</span>
             <img id="card-img" src="">
         </div>
         <div id="card-name"></div>
         <button id="draw-btn" class="btn" onclick="draw()">點我抽卡！</button>
-        <div id="count-info">剩餘抽獎次數：<span id="rem-count">--</span></div>
+        <div style="margin-top:10px; color:#888;">剩餘次數：<span id="rem-count">3</span></div>
     </div>
 
     <script>
-        // --- 請在這裡填入你的 Google 表單資訊 ---
-        const FORM_URL = "https://docs.google.com/forms/d/193JTpxchU-FJUy7Ioy8Qx7t2bFZSimh9Y6A-FrsiXEc/formResponse";
-        const ENTRY_ID = "entry.1197525866"; // 這是剛才叫你記下來的編號
+        // --- 自動紀錄設定區 ---
+        const FORM_ID = "193JTpxchU-FJUy7Ioy8Qx7t2bFZSimh9Y6A-FrsiXEc"; 
+        const ENTRY_ID = "entry.1197525866";
+        const FORM_URL = `https://docs.google.com/forms/d/e/${FORM_ID}/formResponse`;
 
-        const MAX_DRAWS = 3; 
+        const MAX_DRAWS = 5;
         const cards = [
             { name: "隱藏版 SSR", weight: 1, url: "https://via.placeholder.com/260x380?text=SSR" },
             { name: "普通卡 01", weight: 50, url: "https://via.placeholder.com/260x380?text=Card01" }
@@ -42,26 +42,24 @@
         updateUI();
 
         function draw() {
-            if (drawCount >= MAX_DRAWS) {
-                alert("次數已用完！");
-                return;
-            }
+            if (drawCount >= MAX_DRAWS) return;
 
+            // 1. 隨機抽取
             const total = cards.reduce((s, c) => s + c.weight, 0);
             let r = Math.random() * total;
             let res = cards[0];
             for (const c of cards) { r -= c.weight; if (r <= 0) { res = c; break; } }
 
-            // 1. 顯示結果
+            // 2. 顯示結果
             document.getElementById('card-img').src = res.url;
             document.getElementById('card-img').style.display = 'block';
             document.getElementById('msg').style.display = 'none';
             document.getElementById('card-name').innerText = res.name;
 
-            // 2. 自動回報後台 (Google 表單)
+            // 3. 【關鍵：發送到 Google 表單】
             sendToGoogleForm(res.name);
 
-            // 3. 更新次數
+            // 4. 更新次數
             drawCount++;
             localStorage.setItem('drawCount', drawCount);
             updateUI();
@@ -71,7 +69,7 @@
             const formData = new FormData();
             formData.append(ENTRY_ID, cardName);
 
-            // 使用 fetch 在背景悄悄發送，不跳轉頁面
+            // 用背景傳送
             fetch(FORM_URL, {
                 method: "POST",
                 mode: "no-cors",
@@ -84,7 +82,7 @@
             document.getElementById('rem-count').innerText = rem;
             if (rem <= 0) {
                 document.getElementById('draw-btn').disabled = true;
-                document.getElementById('draw-btn').innerText = "次數已耗盡";
+                document.getElementById('draw-btn').innerText = "次數已滿";
             }
         }
     </script>
