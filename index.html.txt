@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>小卡抽獎控制台</title>
+    <style>
+        :root { --primary: #ff4757; --bg: #2f3542; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); color: white; text-align: center; margin: 0; padding: 20px; overflow: hidden; }
+        .card-display { width: 80vw; max-width: 300px; height: 112vw; max-height: 420px; background: #57606f; margin: 20px auto; border-radius: 15px; border: 3px solid white; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; }
+        #card-img { width: 100%; height: 100%; object-fit: cover; display: none; }
+        #placeholder { font-size: 1.2rem; color: #a4b0be; }
+        .btn-draw { background: var(--primary); color: white; border: none; padding: 15px 50px; font-size: 1.2rem; font-weight: bold; border-radius: 50px; box-shadow: 0 5px 0 #ff6b81; cursor: pointer; transition: 0.1s; -webkit-tap-highlight-color: transparent; }
+        .btn-draw:active { transform: translateY(5px); box-shadow: 0 0 0; }
+        #card-name { margin-top: 15px; font-size: 1.1rem; min-height: 1.5em; color: #eccc68; }
+    </style>
+</head>
+<body>
+
+    <h2>🃏 隨機抽取小卡</h2>
+    
+    <div class="card-display" id="container">
+        <div id="placeholder">準備抽取...</div>
+        <img id="card-img" src="" alt="card">
+    </div>
+
+    <div id="card-name"></div>
+    <button class="btn-draw" onclick="draw()">點擊抽卡</button>
+
+    <script>
+        // 在這裡貼上你的 200 張卡片數據
+        const data = [
+            { name: "隱藏版 SSR 簽名卡", weight: 1, img: "https://pic.imgdb.cn/item/6639c0950ea9ad150ca7d667.jpg" },
+            { name: "限定款 SR", weight: 5, img: "https://via.placeholder.com/300x420?text=SR+Card" },
+            { name: "普通小卡 01", weight: 50, img: "https://via.placeholder.com/300x420?text=Card+01" },
+            // ... 依此類推
+        ];
+
+        // 模擬補充到 200 張 (實際使用請手動填入 data 列表)
+        for(let i=2; i<=200; i++) {
+            if(data.length < 200) data.push({ name: "普通卡 "+i, weight: 10, img: "https://via.placeholder.com/300x420?text=Card+"+i });
+        }
+
+        function draw() {
+            const totalWeight = data.reduce((s, c) => s + c.weight, 0);
+            let random = Math.random() * totalWeight;
+            
+            let selected = data[0];
+            for (const item of data) {
+                random -= item.weight;
+                if (random <= 0) {
+                    selected = item;
+                    break;
+                }
+            }
+
+            // 渲染結果
+            document.getElementById('card-img').src = selected.img;
+            document.getElementById('card-img').style.display = 'block';
+            document.getElementById('placeholder').style.display = 'none';
+            document.getElementById('card-name').innerText = selected.name;
+            
+            // 手機震動反饋 (Android 支援)
+            if (navigator.vibrate) navigator.vibrate(50);
+        }
+    </script>
+</body>
+</html>
