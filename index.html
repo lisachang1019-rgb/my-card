@@ -14,49 +14,31 @@
         .card-area { width: 260px; height: 380px; background: #1e1e1e; border: 2px solid #333; margin: 20px auto; border-radius: 15px; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         #card-img { width: 100%; height: 100%; object-fit: cover; display: none; }
         #rolling-text { font-size: 24px; color: #ff4757; font-weight: bold; display: none; padding: 0 10px; }
-        .input-group { margin-bottom: 15px; }
-        input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #333; background: #2a2a2a; color: white; box-sizing: border-box; font-size: 16px; }
-        .btn { width: 100%; background: #ff4757; color: white; border: none; padding: 16px; font-size: 18px; font-weight: bold; border-radius: 50px; cursor: pointer; box-shadow: 0 4px 0 #cc3a47; transition: 0.1s; }
-        .btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #cc3a47; }
-        .btn:disabled { background: #444; color: #888; box-shadow: none; cursor: not-allowed; }
-        .history-section { margin-top: 30px; text-align: left; background: #1e1e1e; padding: 15px; border-radius: 12px; }
-        .history-item { padding: 8px 0; border-bottom: 1px solid #333; font-size: 13px; color: #eccc68; }
-        .rolling { animation: blur 0.1s infinite alternate; }
-        @keyframes blur { from { opacity: 0.5; transform: scale(0.95); } to { opacity: 1; transform: scale(1.05); } }
-        #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #121212; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: bold; }
+        .btn { width: 100%; background: #ff4757; color: white; border: none; padding: 16px; font-size: 18px; font-weight: bold; border-radius: 50px; cursor: pointer; box-shadow: 0 4px 0 #cc3a47; transition: 0.1s; margin-top: 10px; }
+        .btn:disabled { background: #444; color: #888; box-shadow: none; }
+        input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #333; background: #2a2a2a; color: white; box-sizing: border-box; }
+        .history-item { padding: 8px 0; border-bottom: 1px solid #333; font-size: 13px; color: #eccc68; text-align: left; }
     </style>
 </head>
 <body>
-    <div id="loading">
-        <div style="font-size: 40px; margin-bottom: 20px;">📡</div>
-        正在連線雲端獎池...
-    </div>
-
     <div class="container">
         <h2>🎪 雲端一番賞 🎪</h2>
         <div class="pool-card">
             <div style="font-size: 14px; color: #888;">目前獎箱剩餘</div>
             <div class="total-rem" id="total-count">--</div>
         </div>
-        <div class="input-group">
-            <input type="text" id="user-name" placeholder="請輸入暱稱後開始抽獎..." oninput="checkStatus()">
-        </div>
-        <div class="card-area" id="display-box">
+        <input type="text" id="user-name" placeholder="請輸入暱稱開始抽獎..." oninput="checkStatus()">
+        <div class="card-area">
             <span id="msg" style="color: #444;">READY</span>
             <div id="rolling-text">???</div>
             <img id="card-img" src="">
         </div>
-        <div id="card-name" style="margin-bottom:15px; font-weight:bold; height:auto; min-height:1.2em; color: #eccc68; font-size: 20px;"></div>
+        <div id="card-name" style="margin-bottom:15px; font-weight:bold; color: #eccc68; min-height: 1.2em;"></div>
         <button id="draw-btn" class="btn" onclick="draw()" disabled>請先輸入暱稱</button>
-        
-        <div class="history-section">
-            <h4 style="margin: 0 0 10px 0; color: #fff; border-bottom: 1px solid #444; padding-bottom: 5px;">📜 我的抽獎紀錄</h4>
-            <div id="my-history" style="max-height: 200px; overflow-y: auto;">尚未有紀錄</div>
-        </div>
+        <div id="my-history" style="margin-top: 20px;"></div>
     </div>
 
     <script>
-        // 1. Firebase 配置 (請確保資料庫 URL 正確)
         const firebaseConfig = {
             apiKey: "AIzaSyBZeZq-Sdej79LzHrdrB2-O5zE5WABCDQw",
             authDomain: "my-lucky-draw-78943.firebaseapp.com",
@@ -499,31 +481,25 @@
 let currentPool = [];
         let isRolling = false;
 
-        // 監聽 Firebase 數據變化
         db.ref('pool').on('value', (snap) => {
-            const data = snap.val();
-            // 只要一連線成功，無論有沒有資料都關閉 loading 畫面
-            document.getElementById('loading').style.display = 'none';
-            
-            if (!data) {
-                document.getElementById('total-count').innerText = "獎池未初始化";
-            } else {
-                currentPool = data;
-                document.getElementById('total-count').innerText = currentPool.length + " 抽";
-                checkStatus();
-            }
-        }, (error) => {
-            console.error("連線失敗:", error);
-            document.getElementById('loading').innerText = "連線失敗，請檢查權限設定";
+            currentPool = snap.val() || [];
+            document.getElementById('total-count').innerText = currentPool.length + " 抽";
+            checkStatus();
         });
+
+        // 🚀 修正後的重置函式，掛載到 window 確保控制台可用
+        window.initPool = function() {
+            let p = [];
+            cardConfig.forEach(c => { for(let i=0; i<c.count; i++) p.push(c.id); });
+            db.ref('pool').set(p).then(() => alert("獎池已重置！"));
+        };
 
         function checkStatus() {
             if (isRolling) return;
             const name = document.getElementById('user-name').value.trim();
             const btn = document.getElementById('draw-btn');
             btn.disabled = (name === "" || currentPool.length === 0);
-            if (currentPool.length === 0) btn.innerText = "已全數售罄";
-            else btn.innerText = (name === "") ? "請先輸入暱稱" : "點我抽獎！";
+            btn.innerText = (currentPool.length === 0) ? "已售罄" : (name === "" ? "請先輸入暱稱" : "點我抽獎！");
         }
 
         async function draw() {
@@ -534,25 +510,21 @@ let currentPool = [];
             const btn = document.getElementById('draw-btn');
             const rollText = document.getElementById('rolling-text');
             const img = document.getElementById('card-img');
-            const msg = document.getElementById('msg');
             const nameDisplay = document.getElementById('card-name');
 
             btn.disabled = true;
             img.style.display = "none";
-            msg.style.display = "none";
             nameDisplay.innerHTML = "";
             rollText.style.display = "block";
             rollText.classList.add('rolling');
 
             let rollInterval = setInterval(() => {
-                const randomItem = cardConfig[Math.floor(Math.random() * cardConfig.length)];
-                rollText.innerText = randomItem.name;
+                rollText.innerText = cardConfig[Math.floor(Math.random() * cardConfig.length)].name;
             }, 80);
 
-            // 執行交易抽獎
             db.ref('pool').transaction((p) => {
                 if (p && p.length > 0) {
-                    // 機率加權：S/A 賞佔 3 份名額
+                    // 機率加權邏輯 (S/A賞 3倍)
                     let weightedIndices = [];
                     p.forEach((id, index) => {
                         const card = cardConfig.find(c => c.id === id);
@@ -561,10 +533,8 @@ let currentPool = [];
                     });
 
                     const finalIdx = weightedIndices[Math.floor(Math.random() * weightedIndices.length)];
-                    window.lastDraw = p[finalIdx];
+                    window.lastDrawId = p[finalIdx];
                     p.splice(finalIdx, 1);
-                    
-                    // 判斷是否為 Last 賞
                     window.isLastDraw = (p.length === 0);
                     return p;
                 }
@@ -572,27 +542,20 @@ let currentPool = [];
             }, (err, committed) => {
                 setTimeout(() => {
                     clearInterval(rollInterval);
-                    rollText.classList.remove('rolling');
                     rollText.style.display = "none";
-
-                    if (committed && window.lastDraw) {
-                        const result = cardConfig.find(c => c.id === window.lastDraw);
+                    if (committed) {
+                        const result = cardConfig.find(c => c.id === window.lastDrawId);
                         img.src = result.url;
                         img.style.display = "block";
                         
                         let finalName = result.name;
                         if (window.isLastDraw) {
-                            nameDisplay.innerHTML = `${result.name}<br><span style="color:#ff4757; font-size:24px; font-weight:bold;">🎊 獲得 LAST 賞！ 🎊</span>`;
-                            finalName = `${result.name} + LAST賞`;
+                            nameDisplay.innerHTML = `${result.name}<br><span style="color:#ff4757; font-size:24px;">🎊 獲得 LAST 賞！ 🎊</span>`;
+                            finalName += " + LAST賞";
                         } else {
                             nameDisplay.innerText = result.name;
                         }
-
-                        saveLocalRecord(finalName);
-                        sendToGoogleForm(name, finalName);
-                    } else {
-                        msg.style.display = "block";
-                        msg.innerText = "已被抽走，請重試";
+                        saveRecord(name, finalName);
                     }
                     isRolling = false;
                     checkStatus();
@@ -600,27 +563,21 @@ let currentPool = [];
             });
         }
 
-        // --- 其餘輔助函式 ---
-        function saveLocalRecord(cardName) {
-            let history = JSON.parse(localStorage.getItem('myDrawHistory')) || [];
-            history.unshift({ name: cardName, time: new Date().toLocaleTimeString() });
-            localStorage.setItem('myDrawHistory', JSON.stringify(history));
+        function saveRecord(userName, prize) {
+            let history = JSON.parse(localStorage.getItem('drawHist')) || [];
+            history.unshift({ prize, time: new Date().toLocaleTimeString() });
+            localStorage.setItem('drawHist', JSON.stringify(history));
             renderHistory();
-        }
-
-        function renderHistory() {
-            const history = JSON.parse(localStorage.getItem('myDrawHistory')) || [];
-            const container = document.getElementById('my-history');
-            if (history.length === 0) return;
-            container.innerHTML = history.map(h => `<div class="history-item">🕒 ${h.time} - 抽中：${h.name}</div>`).join('');
-        }
-
-        function sendToGoogleForm(name, card) {
+            // 發送至 Google Form
             const FORM_ID = "1FAIpQLSdKRudwWeJy9a_iRpD2JKQqERtOteRwF2P4phoHtPQpqYVX_A";
-            const url = `https://docs.google.com/forms/d/e/${FORM_ID}/formResponse?entry.1434310166=${encodeURIComponent(name)}&entry.1197525866=${encodeURIComponent(card)}&submit=Submit`;
+            const url = `https://docs.google.com/forms/d/e/${FORM_ID}/formResponse?entry.1434310166=${encodeURIComponent(userName)}&entry.1197525866=${encodeURIComponent(prize)}&submit=Submit`;
             new Image().src = url;
         }
 
+        function renderHistory() {
+            const history = JSON.parse(localStorage.getItem('drawHist')) || [];
+            document.getElementById('my-history').innerHTML = history.map(h => `<div class="history-item">🕒 ${h.time} - ${h.prize}</div>`).join('');
+        }
         renderHistory();
     </script>
 </body>
