@@ -529,12 +529,14 @@
             if (isRolling) return;
             const name = document.getElementById('user-name').value.trim();
             isRolling = true;
+            
             const btn = document.getElementById('draw-btn');
             const rollText = document.getElementById('rolling-text');
             const img = document.getElementById('card-img');
             const msg = document.getElementById('msg');
             const nameDisplay = document.getElementById('card-name');
 
+            // 初始化介面
             btn.disabled = true;
             img.style.display = "none";
             msg.style.display = "none";
@@ -542,74 +544,71 @@
             rollText.style.display = "block";
             rollText.classList.add('rolling');
 
+            // 啟動滾動文字效果
             let rollInterval = setInterval(() => {
-                const randomName = cardConfig[Math.floor(Math.random() * cardConfig.length)].name;
-                rollText.innerText = randomName;
+                const randomItem = cardConfig[Math.floor(Math.random() * cardConfig.length)];
+                rollText.innerText = randomItem.name;
             }, 80);
 
+            // 向 Firebase 請求抽獎交易
             db.ref('pool').transaction((p) => {
                 if (p && p.length > 0) {
-                    // --- 加權隨機計算開始 ---
+                    // --- 1. 機率加權邏輯 ---
                     let weightedIndices = [];
                     p.forEach((cardId, index) => {
                         const card = cardConfig.find(c => c.id === cardId);
-                        
-                        // 設定權重：S 和 A 賞在選擇時佔 3 個名額，其餘佔 1 個
-                        // 這樣抽中 S/A 的機率會變成原本的 3 倍
-                        let weight = (card.grade === "S" || card.grade === "A"||card.grade === "B") ? 15 : 1;
-                        
+                        // S賞和A賞在抽獎箱裡放 3 份名額，其餘 1 份
+                        let weight = (card && (card.grade === "S" || card.grade === "A"||card.grade === "B")) ? 15 : 1;
                         for (let i = 0; i < weight; i++) {
                             weightedIndices.push(index);
                         }
                     });
 
-                    // 從加權後的名單中選一個
+                    // 從加權名單中隨機選一個
                     const finalSelectionIndex = weightedIndices[Math.floor(Math.random() * weightedIndices.length)];
                     window.lastDraw = p[finalSelectionIndex];
                     
-                    p.splice(finalSelectionIndex, 1); // 從原獎池移除
+                    // 從原獎池移除該獎項
+                    p.splice(finalSelectionIndex, 1);
+                    
+                    // --- 2. LAST 賞判斷邏輯 ---
+                    // 檢查移除後獎池是否歸零
+                    window.isLastDraw = (p.length === 0);
+                    
                     return p;
-                    // --- 加權隨機計算結束 ---
                 }
                 return;
             }, (err, committed) => {
+                // 等待 1.5 秒滾動特效後顯示結果
                 setTimeout(() => {
                     clearInterval(rollInterval);
                     rollText.classList.remove('rolling');
                     rollText.style.display = "none";
-                    if (committed) {
+
+                    if (committed && window.lastDraw) {
                         const result = cardConfig.find(c => c.id === window.lastDraw);
                         img.src = result.url;
                         img.style.display = "block";
-                        nameDisplay.innerText = result.name;
-                        saveLocalRecord(result.name);
-                        sendToGoogleForm(name, result.name);
+                        
+                        // --- 3. 畫面顯示與紀錄整合 ---
+                        let finalName = result.name;
+                        if (window.isLastDraw) {
+                            // 如果是最後一抽，修改顯示文字並更新紀錄內容
+                            nameDisplay.innerHTML = `${result.name}<br><span style="color:#ff4757; font-size:24px; font-weight:bold;">🎊 獲得 LAST 賞！ 🎊</span>`;
+                            finalName = `${result.name} + LAST賞`;
+                        } else {
+                            nameDisplay.innerText = result.name;
+                        }
+
+                        saveLocalRecord(finalName);
+                        sendToGoogleForm(name, finalName);
+                    } else {
+                        msg.style.display = "block";
+                        msg.innerText = "抽獎失敗，請稍後再試";
                     }
+                    
                     isRolling = false;
                     checkStatus();
                 }, 1500);
             });
         }
-        function saveLocalRecord(cardName) {
-            let history = JSON.parse(localStorage.getItem('myDrawHistory')) || [];
-            history.unshift({ name: cardName, time: new Date().toLocaleTimeString() });
-            localStorage.setItem('myDrawHistory', JSON.stringify(history));
-            renderHistory();
-        }
-
-        function renderHistory() {
-            const history = JSON.parse(localStorage.getItem('myDrawHistory')) || [];
-            const container = document.getElementById('my-history');
-            if (history.length === 0) return;
-            container.innerHTML = history.map(h => `<div class="history-item">🕒 ${h.time} - 抽中：${h.name}</div>`).join('');
-        }
-
-        function sendToGoogleForm(name, card) {
-            const FORM_ID = "1FAIpQLSdKRudwWeJy9a_iRpD2JKQqERtOteRwF2P4phoHtPQpqYVX_A";
-            const url = `https://docs.google.com/forms/d/e/${FORM_ID}/formResponse?entry.1434310166=${encodeURIComponent(name)}&entry.1197525866=${encodeURIComponent(card)}&submit=Submit`;
-            new Image().src = url;
-        }
-        renderHistory();
-    </script>
-</body>
-</html>
