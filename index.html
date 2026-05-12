@@ -559,27 +559,7 @@
             document.getElementById('card-name').innerText = res.name;
         }
 
-        // >>> 把初始化程式碼貼在這裡 <<<
-        function initPool() {
-            const config = {
-                "S": 4, "A": 4, "B": 17, "C": 18, "D": 33, "E": 188, "F": 366
-            };
-            let newPool = [];
-            for (let grade in config) {
-                for (let i = 0; i < config[grade]; i++) {
-                    newPool.push(grade);
-                }
-            }
-            for (let i = newPool.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [newPool[i], newPool[j]] = [newPool[j], newPool[i]];
-            }
-            db.ref().update({
-                pool: newPool,
-                usedCodes: {} 
-            }).then(() => {
-                alert("🎉 631 張獎券已成功裝填！");
-            });
+      
         }
     </script>
 </body>
