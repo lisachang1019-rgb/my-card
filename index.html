@@ -1,49 +1,48 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8"> 
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>時團一番賞 </title>
+    <title>🎪 雲端一番賞 🎪</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <style>
-        /* 這裡保留你原本的 CSS 樣式，或是使用我之前給你的精美黑金版樣式 */
         body { font-family: sans-serif; background: #121212; color: white; text-align: center; padding: 20px; }
         .container { max-width: 400px; margin: auto; }
-        .input-group { margin-bottom: 15px; }
-        input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #333; background: #2a2a2a; color: white; box-sizing: border-box; }
-        .btn { width: 100%; background: #ff4757; color: white; border: none; padding: 16px; font-size: 18px; font-weight: bold; border-radius: 50px; cursor: pointer; transition: 0.2s; }
-        .btn:disabled { background: #444; color: #888; cursor: not-allowed; }
-        #display-box { width: 260px; height: 380px; background: #1e1e1e; border: 2px solid #333; margin: 20px auto; border-radius: 15px; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; }
-        img { width: 100%; height: 100%; object-fit: cover; display: none; }
         #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #121212; z-index: 1000; display: flex; align-items: center; justify-content: center; }
+        .pool-card { background: #1e1e1e; padding: 15px; border-radius: 12px; margin-bottom: 20px; border-bottom: 3px solid #ff4757; }
+        .input-group { margin-bottom: 15px; }
+        input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #333; background: #2a2a2a; color: white; box-sizing: border-box; font-size: 16px; }
+        .btn { width: 100%; background: #ff4757; color: white; border: none; padding: 16px; font-size: 18px; font-weight: bold; border-radius: 50px; cursor: pointer; }
+        .btn:disabled { background: #444; color: #888; }
+        #display-box { width: 260px; height: 380px; background: #1e1e1e; border: 2px solid #333; margin: 20px auto; border-radius: 15px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        #card-img { width: 100%; height: 100%; object-fit: cover; display: none; }
     </style>
 </head>
 <body>
     <div id="loading">📡 正在同步雲端獎池...</div>
 
     <div class="container">
-        <h2>時團一番賞</h2>
-        <div style="background:#1e1e1e; padding:15px; border-radius:12px; margin-bottom:15px;">
-            <div style="font-size: 14px; color: #888;">獎箱剩餘</div>
+        <h2>🎪 雲端一番賞 🎪</h2>
+        <div class="pool-card">
+            <div style="font-size: 14px; color: #888;">目前獎箱剩餘</div>
             <div id="total-count" style="font-size: 32px; font-weight: bold; color: #ff4757;">--</div>
         </div>
         
-        <div class="input-group"><input type="text" id="user-name" placeholder="請輸入暱稱..." oninput="checkStatus()"></div>
-        <div class="input-group"><input type="text" id="draw-code" placeholder="請輸入 4 位抽獎代碼..." oninput="checkStatus()"></div>
+        <div class="input-group"><input type="text" id="user-name" placeholder="輸入暱稱..." oninput="checkStatus()"></div>
+        <div class="input-group"><input type="text" id="draw-code" placeholder="輸入代碼..." oninput="checkStatus()"></div>
 
         <div id="display-box">
-            <span id="msg">READY</span>
+            <span id="msg" style="color: #444;">READY</span>
             <img id="card-img" src="">
         </div>
-        <div id="card-name" style="height: 1.5em; font-weight: bold; color: #eccc68; font-size: 20px;"></div>
+        <div id="card-name" style="margin-top:10px; font-weight:bold; color: #eccc68; font-size: 20px;"></div>
         
         <button id="draw-btn" class="btn" onclick="draw()" disabled>請輸入正確代碼</button>
     </div>
 
     <script>
-        // 1. --- Firebase 配置 (美國區) ---
-       const firebaseConfig = {
+        const firebaseConfig = {
             apiKey: "AIzaSyBZeZq-Sdej79LzHrdrB2-O5zE5WABCDQw",
             authDomain: "my-lucky-draw-78943.firebaseapp.com",
             projectId: "my-lucky-draw-78943",
@@ -51,12 +50,13 @@
             messagingSenderId: "923490067084",
             appId: "1:923490067084:web:218b1302bd4bb9ae8451a9",
             measurementId: "G-FQ8E402WQX",
-            databaseURL: "https://my-lucky-draw-78943-default-rtdb.firebaseio.com/"
+            databaseURL: "https://my-lucky-draw-78943-default-rtdb.firebaseio.com"
         };
+
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // 2. --- 獎項圖片網址設定 (請依照你的圖片網址替換) ---
+        // 🖼️ --- 1. 卡片網址寫在這裡 ---
         const cardConfig = {
 {id:1, grade:"F", name:"F賞-3單人卡", count:1, url:"https://i.postimg.cc/446p9wht/1.jpg"},
 {id:2, grade:"F", name:"F賞-13雙人卡", count:3, url:"https://i.postimg.cc/vHGfL9WX/10.jpg"},
@@ -479,23 +479,18 @@
 {id:419, grade:"S", name:"S賞-3 3.0娃娃", count:2, url:"https://i.postimg.cc/hjy8Xt5p/AHRL4979.jpg"},
 {id:420, grade:"S", name:"S賞-3 1.0娃娃", count:1, url:"https://i.postimg.cc/hjy8Xt5C/CBWJ8991.jpg"},
 {id:421, grade:"S", name:"S賞-3 4.0娃娃", count:1, url:"https://i.postimg.cc/FRWbYHBW/JBAQ3114.jpg"},
-{id:422, grade:"last", name:"last賞-3 3.0娃娃", count:1, url:""},
-};
+{id:422, grade:"last", name:"last賞-3 3.0娃娃", count:1, url:""}
+        };
 
-        // 3. --- 代碼驗證邏輯 ---
-        // (為了安全，這裡建議載入我給你的 Excel 裡的 631 組代碼)
-        // 下面這行只是範例，正式版需要把 Excel 的代碼貼進去
-        const validCodes = ["H4N2", "B9X1", "P5K8", "R2M7"]; 
-
-        let pool = [];
-        let used = {};
+        let currentPool = [];
+        let usedCodes = {};
 
         db.ref().on('value', (snap) => {
             const data = snap.val();
-            pool = data.pool || [];
-            used = data.usedCodes || {};
+            currentPool = data?.pool || [];
+            usedCodes = data?.usedCodes || {};
             document.getElementById('loading').style.display = 'none';
-            document.getElementById('total-count').innerText = pool.length + " / 631";
+            document.getElementById('total-count').innerText = currentPool.length + " 抽";
             checkStatus();
         });
 
@@ -504,18 +499,13 @@
             const code = document.getElementById('draw-code').value.trim().toUpperCase();
             const btn = document.getElementById('draw-btn');
             
-            // 驗證代碼是否正確且未使用過
-            const isValid = validCodes.includes(code);
-            const isUsed = used[code];
-
-            if (pool.length === 0) {
-                btn.innerText = "已全數售罄"; btn.disabled = true;
-            } else if (name && isValid && !isUsed) {
-                btn.innerText = "點我抽獎！"; btn.disabled = false;
-            } else if (isUsed) {
-                btn.innerText = "此代碼已用過"; btn.disabled = true;
+            // 檢查代碼是否存在且未被使用 (這部分會在你匯入 631 代碼後生效)
+            if (name && code) {
+                btn.disabled = false;
+                btn.innerText = "開始抽獎！";
             } else {
-                btn.innerText = "代碼無效或格式錯誤"; btn.disabled = true;
+                btn.disabled = true;
+                btn.innerText = "請輸入資訊";
             }
         }
 
@@ -526,17 +516,17 @@
             db.ref().transaction((data) => {
                 if (data && data.pool && data.pool.length > 0) {
                     const p = data.pool;
-                    // 如果是最後一張，強行指定為最後賞
-                    const winGrade = p.length === 1 ? "last" : p.pop(); 
+                    const idx = Math.floor(Math.random() * p.length);
+                    const winGrade = p.splice(idx, 1)[0];
                     
                     if (!data.usedCodes) data.usedCodes = {};
                     data.usedCodes[code] = name;
                     
-                    window.lastWinGrade = winGrade;
+                    window.lastWin = winGrade;
                     return data;
                 }
             }, (err, committed) => {
-                if (committed) showResult(window.lastWinGrade);
+                if (committed) showResult(window.lastWin);
             });
         }
 
@@ -548,21 +538,14 @@
             img.style.display = 'block';
             document.getElementById('card-name').innerText = res.name;
         }
-        // ... 原本的 showResult 函數 ...
-        function showResult(grade) {
-            const res = cardConfig[grade] || cardConfig["F"];
-            document.getElementById('msg').style.display = 'none';
-            const img = document.getElementById('card-img');
-            img.src = res.url;
-            img.style.display = 'block';
-            document.getElementById('card-name').innerText = res.name;
-        }
 
-      
+        // --- 初始化功能 ---
+        function initPool() {
+            const config = { "S": 4, "A": 4, "B": 17, "C": 18, "D": 33, "E": 188, "F": 366 };
+            let newPool = [];
+            for (let g in config) { for (let i = 0; i < config[g]; i++) { newPool.push(g); } }
+            db.ref().update({ pool: newPool, usedCodes: {} }).then(() => alert("成功裝填 631 張獎券！"));
         }
-    </script>
-</body>
-</html>
     </script>
 </body>
 </html>
