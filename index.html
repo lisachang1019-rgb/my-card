@@ -12,27 +12,35 @@
         #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #121212; z-index: 1000; display: flex; align-items: center; justify-content: center; }
         .pool-card { background: #1e1e1e; padding: 15px; border-radius: 12px; margin-bottom: 15px; border-bottom: 3px solid #ff4757; }
         input { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #333; background: #2a2a2a; color: white; box-sizing: border-box; font-size: 16px; }
-        .btn { width: 100%; background: #ff4757; color: white; border: none; padding: 16px; font-size: 18px; font-weight: bold; border-radius: 50px; cursor: pointer; }
+        .btn { width: 100%; background: #ff4757; color: white; border: none; padding: 16px; font-size: 18px; font-weight: bold; border-radius: 50px; cursor: pointer; margin-top: 10px; }
         .btn:disabled { background: #444; color: #888; }
         #display-box { width: 260px; height: 380px; background: #1e1e1e; border: 2px solid #333; margin: 20px auto; border-radius: 15px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
         #card-img { width: 100%; height: 100%; object-fit: cover; display: none; }
+        #record-list { margin-top: 20px; text-align: left; background: #1e1e1e; padding: 15px; border-radius: 12px; font-size: 14px; max-height: 200px; overflow-y: auto; }
+        .record-item { border-bottom: 1px solid #333; padding: 5px 0; color: #aaa; }
     </style>
 </head>
 <body>
-    <div id="loading">📡 正在同步資料...</div>
+    <div id="loading">📡 正在同步雲端獎池...</div>
     <div class="container">
         <h2>🎪 雲端一番賞 🎪</h2>
         <div class="pool-card">
             <div id="total-count" style="font-size: 32px; font-weight: bold; color: #ff4757;">-- 抽</div>
         </div>
         <input type="text" id="user-name" placeholder="輸入暱稱...">
-        <input type="text" id="draw-code" placeholder="輸入代碼...">
+        <input type="text" id="draw-code" placeholder="輸入抽獎代碼...">
+        
         <div id="display-box"><img id="card-img"></div>
-        <div id="card-name" style="margin-bottom:10px; color:#eccc68;"></div>
+        <div id="card-name" style="margin-bottom:10px; color:#eccc68; font-weight:bold; height: 24px;"></div>
+        
         <button id="draw-btn" class="btn" onclick="draw()">開始抽獎</button>
+        
+        <div style="margin-top: 30px; color: #888;">--- 最近中獎紀錄 ---</div>
+        <div id="record-list">尚未有抽獎紀錄</div>
     </div>
 
     <script>
+        // Firebase 設定
         const firebaseConfig = {
             apiKey: "AIzaSyBZeZq-Sdej79LzHrdrB2-O5zE5WABCDQw",
             authDomain: "my-lucky-draw-78943.firebaseapp.com",
@@ -46,7 +54,7 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // 這次我只放幾個當範例，確保妳能動，妳成功後再自己把 422 條補進去
+        // 卡片資訊池
         const cardConfig = [
 {grade:"F", name:"F賞-3單人卡", count:1, url:"https://i.postimg.cc/446p9wht/1.jpg"},
 {grade:"F", name:"F賞-13雙人卡", count:3, url:"https://i.postimg.cc/vHGfL9WX/10.jpg"},
@@ -469,43 +477,99 @@
 {grade:"S", name:"S賞-3 3.0娃娃", count:2, url:"https://i.postimg.cc/hjy8Xt5p/AHRL4979.jpg"},
 {grade:"S", name:"S賞-3 1.0娃娃", count:1, url:"https://i.postimg.cc/hjy8Xt5C/CBWJ8991.jpg"},
 {grade:"S", name:"S賞-3 4.0娃娃", count:1, url:"https://i.postimg.cc/FRWbYHBW/JBAQ3114.jpg"},
-{grade:"last", name:"last賞-3 3.0娃娃", count:1, url:"https://i.postimg.cc/hjy8Xt5p/AHRL4979.jpg"},
+{grade:"last", name:"last賞-3 3.0娃娃", count:1, url:"https://i.postimg.cc/hjy8Xt5p/AHRL4979.jpg"}
 
         ];
 
+        // 監聽雲端剩餘張數與紀錄
         db.ref().on('value', (snap) => {
             const data = snap.val();
             document.getElementById('loading').style.display = 'none';
-            document.getElementById('total-count').innerText = (data?.pool?.length || 0) + " 抽";
+            if (data) {
+                // 更新剩餘抽數
+                document.getElementById('total-count').innerText = (data.pool ? data.pool.length : 0) + " 抽";
+                
+                // 更新中獎紀錄顯示
+                if (data.usedCodes) {
+                    const records = Object.entries(data.usedCodes).reverse(); // 最新紀錄排前面
+                    const recordHtml = records.map(([code, name]) => `<div class="record-item">👤 ${name} 使用了代碼 [${code}]</div>`).join('');
+                    document.getElementById('record-list').innerHTML = recordHtml || "尚未有抽獎紀錄";
+                }
+            }
         });
 
+        // 抽獎主程式
         async function draw() {
             const name = document.getElementById('user-name').value;
             const code = document.getElementById('draw-code').value;
-            if(!name || !code) return alert("請輸入資訊");
+            const btn = document.getElementById('draw-btn');
+            
+            if(!name || !code) return alert("請輸入暱稱與抽獎代碼");
+
+            // 禁用按鈕防止重複點擊
+            btn.disabled = true;
 
             db.ref().transaction((data) => {
                 if (data && data.pool && data.pool.length > 0) {
+                    // 檢查代碼是否用過
+                    if (data.usedCodes && data.usedCodes[code]) {
+                        window.drawError = "此代碼已使用過";
+                        return; 
+                    }
+                    // 抽出獎項
                     const winGrade = data.pool.pop();
                     if(!data.usedCodes) data.usedCodes = {};
                     data.usedCodes[code] = name;
                     window.lastWin = winGrade;
                     return data;
+                } else {
+                    window.drawError = "獎池已空或資料錯誤";
+                    return;
                 }
             }, (err, committed) => {
                 if (committed) {
-                    const res = Object.values(cardConfig).find(c => c.grade === window.lastWin);
-                    document.getElementById('card-img').src = res.url;
-                    document.getElementById('card-img').style.display = "block";
-                    document.getElementById('card-name').innerText = res.name;
+                    startRollEffect(name);
+                } else {
+                    alert(window.drawError || "抽獎失敗");
+                    btn.disabled = false;
                 }
             });
         }
 
-        function initPool() {
+        // 滾動效果函式
+        function startRollEffect(userName) {
+            let count = 0;
+            const cardImg = document.getElementById('card-img');
+            const cardName = document.getElementById('card-name');
+            const btn = document.getElementById('draw-btn');
+            cardImg.style.display = "block";
+
+            const timer = setInterval(() => {
+                // 隨機閃爍效果
+                const randomShow = cardConfig[Math.floor(Math.random() * cardConfig.length)];
+                cardImg.src = randomShow.url;
+                cardName.innerText = "🎲 正在開獎中...";
+                count++;
+
+                if (count > 25) { // 滾動次數
+                    clearInterval(timer);
+                    // 顯示最終結果
+                    const result = cardConfig.find(c => c.grade === window.lastWin) || cardConfig[0];
+                    cardImg.src = result.url;
+                    cardName.innerText = `🎉 恭喜 ${userName} 抽中：${result.name}`;
+                    btn.disabled = false;
+                    
+                    // 如果有 Google Form 紀錄功能，請在此呼叫
+                    // sendToGoogleForm(userName, result.name);
+                }
+            }, 60); // 閃爍速度
+        }
+
+        // 初始化獎池（僅供開發者在 Console 使用）
+        function initPool(totalCards = 631) {
             let p = [];
-            for(let i=0; i<631; i++) p.push("F"); // 先全部填 F 測試用
-            db.ref().set({ pool: p, usedCodes: {} }).then(() => alert("成功！"));
+            for(let i=0; i<totalCards; i++) p.push("F"); 
+            db.ref().set({ pool: p, usedCodes: {} }).then(() => alert("獎池初始化成功！"));
         }
     </script>
 </body>
