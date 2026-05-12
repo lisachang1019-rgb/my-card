@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title> 時團試玩一番賞</title></title>
+    <title>🎪 雲端一番賞 🎪</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <style>
@@ -13,7 +13,7 @@
         .total-rem { font-size: 32px; font-weight: bold; color: #ff4757; }
         .card-area { width: 260px; height: 380px; background: #1e1e1e; border: 2px solid #333; margin: 20px auto; border-radius: 15px; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         #card-img { width: 100%; height: 100%; object-fit: cover; display: none; }
-        #rolling-text { font-size: 24px; color: #ff4757; font-weight: bold; display: none; }
+        #rolling-text { font-size: 24px; color: #ff4757; font-weight: bold; display: none; padding: 0 10px; }
         .input-group { margin-bottom: 15px; }
         input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #333; background: #2a2a2a; color: white; box-sizing: border-box; font-size: 16px; }
         .btn { width: 100%; background: #ff4757; color: white; border: none; padding: 16px; font-size: 18px; font-weight: bold; border-radius: 50px; cursor: pointer; box-shadow: 0 4px 0 #cc3a47; transition: 0.1s; }
@@ -23,14 +23,17 @@
         .history-item { padding: 8px 0; border-bottom: 1px solid #333; font-size: 13px; color: #eccc68; }
         .rolling { animation: blur 0.1s infinite alternate; }
         @keyframes blur { from { opacity: 0.5; transform: scale(0.95); } to { opacity: 1; transform: scale(1.05); } }
-        #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #121212; z-index: 1000; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #121212; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: bold; }
     </style>
 </head>
 <body>
-    <div id="loading">📡 正在連線雲端獎池...</div>
+    <div id="loading">
+        <div style="font-size: 40px; margin-bottom: 20px;">📡</div>
+        正在連線雲端獎池...
+    </div>
 
     <div class="container">
-        <h2>時團試玩一番賞</h2>
+        <h2>🎪 雲端一番賞 🎪</h2>
         <div class="pool-card">
             <div style="font-size: 14px; color: #888;">目前獎箱剩餘</div>
             <div class="total-rem" id="total-count">--</div>
@@ -43,8 +46,9 @@
             <div id="rolling-text">???</div>
             <img id="card-img" src="">
         </div>
-        <div id="card-name" style="margin-bottom:15px; font-weight:bold; height:1.2em; color: #eccc68; font-size: 20px;"></div>
+        <div id="card-name" style="margin-bottom:15px; font-weight:bold; height:auto; min-height:1.2em; color: #eccc68; font-size: 20px;"></div>
         <button id="draw-btn" class="btn" onclick="draw()" disabled>請先輸入暱稱</button>
+        
         <div class="history-section">
             <h4 style="margin: 0 0 10px 0; color: #fff; border-bottom: 1px solid #444; padding-bottom: 5px;">📜 我的抽獎紀錄</h4>
             <div id="my-history" style="max-height: 200px; overflow-y: auto;">尚未有紀錄</div>
@@ -52,7 +56,7 @@
     </div>
 
     <script>
-        // 1. --- Firebase 設定 (請務必將這裡替換成你自己的) ---
+        // 1. Firebase 配置 (請確保資料庫 URL 正確)
         const firebaseConfig = {
             apiKey: "AIzaSyBZeZq-Sdej79LzHrdrB2-O5zE5WABCDQw",
             authDomain: "my-lucky-draw-78943.firebaseapp.com",
@@ -61,7 +65,6 @@
             messagingSenderId: "923490067084",
             appId: "1:923490067084:web:218b1302bd4bb9ae8451a9",
             measurementId: "G-FQ8E402WQX",
-            // 美國伺服器的網址通常不帶區域代碼，請改用這行：
             databaseURL: "https://my-lucky-draw-78943-default-rtdb.firebaseio.com"
         };
         firebase.initializeApp(firebaseConfig);
@@ -493,28 +496,26 @@
 {id:422, grade:"last", name:"last賞-3 3.0娃娃", count:1, url:"https://i.postimg.cc/hjy8Xt5p/AHRL4979.jpg"},
 
         ];
-
-        let currentPool = [];
+let currentPool = [];
         let isRolling = false;
 
-        // 監聽雲端數據
+        // 監聽 Firebase 數據變化
         db.ref('pool').on('value', (snap) => {
             const data = snap.val();
-            if (!data || data.length === 0) {
-                initPool(); 
+            // 只要一連線成功，無論有沒有資料都關閉 loading 畫面
+            document.getElementById('loading').style.display = 'none';
+            
+            if (!data) {
+                document.getElementById('total-count').innerText = "獎池未初始化";
             } else {
                 currentPool = data;
-                document.getElementById('loading').style.display = 'none';
                 document.getElementById('total-count').innerText = currentPool.length + " 抽";
                 checkStatus();
             }
+        }, (error) => {
+            console.error("連線失敗:", error);
+            document.getElementById('loading').innerText = "連線失敗，請檢查權限設定";
         });
-
-        function initPool() {
-            let p = [];
-            cardConfig.forEach(c => { for(let i=0; i<c.count; i++) p.push(c.id); });
-            db.ref('pool').set(p);
-        }
 
         function checkStatus() {
             if (isRolling) return;
@@ -536,50 +537,39 @@
             const msg = document.getElementById('msg');
             const nameDisplay = document.getElementById('card-name');
 
-            // 初始化介面
             btn.disabled = true;
             img.style.display = "none";
             msg.style.display = "none";
-            nameDisplay.innerText = "";
+            nameDisplay.innerHTML = "";
             rollText.style.display = "block";
             rollText.classList.add('rolling');
 
-            // 啟動滾動文字效果
             let rollInterval = setInterval(() => {
                 const randomItem = cardConfig[Math.floor(Math.random() * cardConfig.length)];
                 rollText.innerText = randomItem.name;
             }, 80);
 
-            // 向 Firebase 請求抽獎交易
+            // 執行交易抽獎
             db.ref('pool').transaction((p) => {
                 if (p && p.length > 0) {
-                    // --- 1. 機率加權邏輯 ---
+                    // 機率加權：S/A 賞佔 3 份名額
                     let weightedIndices = [];
-                    p.forEach((cardId, index) => {
-                        const card = cardConfig.find(c => c.id === cardId);
-                        // S賞和A賞在抽獎箱裡放 3 份名額，其餘 1 份
-                        let weight = (card && (card.grade === "S" || card.grade === "A"||card.grade === "B")) ? 15 : 1;
-                        for (let i = 0; i < weight; i++) {
-                            weightedIndices.push(index);
-                        }
+                    p.forEach((id, index) => {
+                        const card = cardConfig.find(c => c.id === id);
+                        let weight = (card && (card.grade === "S" || card.grade === "A")) ? 3 : 1;
+                        for (let i = 0; i < weight; i++) weightedIndices.push(index);
                     });
 
-                    // 從加權名單中隨機選一個
-                    const finalSelectionIndex = weightedIndices[Math.floor(Math.random() * weightedIndices.length)];
-                    window.lastDraw = p[finalSelectionIndex];
+                    const finalIdx = weightedIndices[Math.floor(Math.random() * weightedIndices.length)];
+                    window.lastDraw = p[finalIdx];
+                    p.splice(finalIdx, 1);
                     
-                    // 從原獎池移除該獎項
-                    p.splice(finalSelectionIndex, 1);
-                    
-                    // --- 2. LAST 賞判斷邏輯 ---
-                    // 檢查移除後獎池是否歸零
+                    // 判斷是否為 Last 賞
                     window.isLastDraw = (p.length === 0);
-                    
                     return p;
                 }
                 return;
             }, (err, committed) => {
-                // 等待 1.5 秒滾動特效後顯示結果
                 setTimeout(() => {
                     clearInterval(rollInterval);
                     rollText.classList.remove('rolling');
@@ -590,10 +580,8 @@
                         img.src = result.url;
                         img.style.display = "block";
                         
-                        // --- 3. 畫面顯示與紀錄整合 ---
                         let finalName = result.name;
                         if (window.isLastDraw) {
-                            // 如果是最後一抽，修改顯示文字並更新紀錄內容
                             nameDisplay.innerHTML = `${result.name}<br><span style="color:#ff4757; font-size:24px; font-weight:bold;">🎊 獲得 LAST 賞！ 🎊</span>`;
                             finalName = `${result.name} + LAST賞`;
                         } else {
@@ -604,11 +592,36 @@
                         sendToGoogleForm(name, finalName);
                     } else {
                         msg.style.display = "block";
-                        msg.innerText = "抽獎失敗，請稍後再試";
+                        msg.innerText = "已被抽走，請重試";
                     }
-                    
                     isRolling = false;
                     checkStatus();
                 }, 1500);
             });
         }
+
+        // --- 其餘輔助函式 ---
+        function saveLocalRecord(cardName) {
+            let history = JSON.parse(localStorage.getItem('myDrawHistory')) || [];
+            history.unshift({ name: cardName, time: new Date().toLocaleTimeString() });
+            localStorage.setItem('myDrawHistory', JSON.stringify(history));
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const history = JSON.parse(localStorage.getItem('myDrawHistory')) || [];
+            const container = document.getElementById('my-history');
+            if (history.length === 0) return;
+            container.innerHTML = history.map(h => `<div class="history-item">🕒 ${h.time} - 抽中：${h.name}</div>`).join('');
+        }
+
+        function sendToGoogleForm(name, card) {
+            const FORM_ID = "1FAIpQLSdKRudwWeJy9a_iRpD2JKQqERtOteRwF2P4phoHtPQpqYVX_A";
+            const url = `https://docs.google.com/forms/d/e/${FORM_ID}/formResponse?entry.1434310166=${encodeURIComponent(name)}&entry.1197525866=${encodeURIComponent(card)}&submit=Submit`;
+            new Image().src = url;
+        }
+
+        renderHistory();
+    </script>
+</body>
+</html>
