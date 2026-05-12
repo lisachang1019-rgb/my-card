@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🎪 雲端一番賞 🎪</title>
+    <title> 時團試玩一番賞</title></title>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <style>
@@ -30,7 +30,7 @@
     <div id="loading">📡 正在連線雲端獎池...</div>
 
     <div class="container">
-        <h2>🎪 雲端一番賞 🎪</h2>
+        <h2>時團試玩一番賞</h2>
         <div class="pool-card">
             <div style="font-size: 14px; color: #888;">目前獎箱剩餘</div>
             <div class="total-rem" id="total-count">--</div>
@@ -556,7 +556,7 @@
                         
                         // 設定權重：S 和 A 賞在選擇時佔 3 個名額，其餘佔 1 個
                         // 這樣抽中 S/A 的機率會變成原本的 3 倍
-                        let weight = (card.grade === "S" || card.grade === "A") ? 5 : 1;
+                        let weight = (card.grade === "S" || card.grade === "A"||card.grade === "B") ? 15 : 1;
                         
                         for (let i = 0; i < weight; i++) {
                             weightedIndices.push(index);
