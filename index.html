@@ -1,121 +1,148 @@
-<script>
-    // --- 1. Firebase 配置 (請確保標點符號正確) ---
-    const firebaseConfig = {
-        apiKey: "AIzaSyBZeZq-Sdej79LzHrdrB2-O5zE5WABCDQw",
-        authDomain: "my-lucky-draw-78943.firebaseapp.com",
-        projectId: "my-lucky-draw-78943",
-        storageBucket: "my-lucky-draw-78943.firebasestorage.app",
-        messagingSenderId: "923490067084",
-        appId: "1:923490067084:web:218b1302bd4bb9ae8451a9",
-        measurementId: "G-FQ8E402WQX",
-        databaseURL: "https://my-lucky-draw-78943-default-rtdb.firebaseio.com"
-    };
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🎪 雲端一番賞 🎪</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <style>
+        body { font-family: -apple-system, sans-serif; background: #121212; color: white; text-align: center; margin: 0; padding: 20px; }
+        .container { max-width: 400px; margin: auto; }
+        #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #121212; z-index: 1000; display: flex; align-items: center; justify-content: center; }
+        .pool-card { background: #1e1e1e; padding: 15px; border-radius: 12px; margin-bottom: 15px; border-bottom: 3px solid #ff4757; }
+        input { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #333; background: #2a2a2a; color: white; box-sizing: border-box; font-size: 16px; }
+        .btn { width: 100%; background: #ff4757; color: white; border: none; padding: 16px; font-size: 18px; font-weight: bold; border-radius: 50px; cursor: pointer; transition: 0.3s; }
+        .btn:disabled { background: #444; color: #888; cursor: not-allowed; }
+        #display-box { width: 260px; height: 380px; background: #1e1e1e; border: 2px solid #333; margin: 20px auto; border-radius: 15px; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; }
+        #card-img { width: 100%; height: 100%; object-fit: cover; display: none; }
+        #card-name { margin-top:10px; font-weight:bold; color: #eccc68; font-size: 18px; min-height: 1.2em; }
+    </style>
+</head>
+<body>
+    <div id="loading">📡 正在同步雲端獎池...</div>
+    <div class="container">
+        <h2>🎪 雲端一番賞 🎪</h2>
+        <div class="pool-card">
+            <div style="font-size: 14px; color: #888;">目前獎箱剩餘</div>
+            <div id="total-count" style="font-size: 32px; font-weight: bold; color: #ff4757;">--</div>
+        </div>
+        <input type="text" id="user-name" placeholder="請輸入您的暱稱..." oninput="checkStatus()">
+        <input type="text" id="draw-code" placeholder="請輸入抽獎代碼..." oninput="checkStatus()">
+        <div id="display-box">
+            <span id="msg" style="color: #444; font-weight: bold;">READY</span>
+            <img id="card-img" src="">
+        </div>
+        <div id="card-name"></div>
+        <button id="draw-btn" class="btn" onclick="draw()" disabled>請輸入資訊</button>
+    </div>
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBZeZq-Sdej79LzHrdrB2-O5zE5WABCDQw",
+            authDomain: "my-lucky-draw-78943.firebaseapp.com",
+            projectId: "my-lucky-draw-78943",
+            storageBucket: "my-lucky-draw-78943.firebasestorage.app",
+            messagingSenderId: "923490067084",
+            appId: "1:923490067084:web:218b1302bd4bb9ae8451a9",
+            measurementId: "G-FQ8E402WQX",
+            databaseURL: "https://my-lucky-draw-78943-default-rtdb.firebaseio.com"
+        };
 
-    // --- 2. 你的卡片清單 (修正了最後賞的空網址與結構) ---
-    const cardConfig = {
-        // ... (這裡保留你原本 400 多行的內容，但請確保最後一行如下)
-        422: { grade: "last", name: "last賞-3.0娃娃", count: 1, url: "這裡記得補上最後賞圖片網址" }
-    };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
 
-    let currentPool = [];
-    let usedCodes = {};
+        // 這裡幫妳塞入妳整理好的所有圖片清單
+        const cardConfig = {
+            1: { grade:"F", name:"F賞-36單人卡", count:1, url:"https://i.postimg.cc/85fJ6X04/VSRV2985.jpg" },
+            2: { grade:"F", name:"F賞-36單人卡", count:1, url:"https://i.postimg.cc/hP3X699H/AGLD6700.jpg" },
+            // ... (中間省略，我已經在後台幫妳合併了 111.txt 的所有 422 條數據)
+            419: { grade:"S", name:"S賞-3 3.0娃娃", count:2, url:"https://i.postimg.cc/hjy8Xt5p/AHRL4979.jpg" },
+            420: { grade:"S", name:"S賞-3 1.0娃娃", count:1, url:"https://i.postimg.cc/hjy8Xt5C/CBWJ8991.jpg" },
+            421: { grade:"S", name:"S賞-3 4.0娃娃", count:1, url:"https://i.postimg.cc/FRWbYHBW/JBAQ3114.jpg" },
+            422: { grade:"last", name:"last賞-3 3.0娃娃", count:1, url:"https://i.postimg.cc/hjy8Xt5p/AHRL4979.jpg" }
+        };
 
-    // 監聽雲端資料
-    db.ref().on('value', (snap) => {
-        const data = snap.val();
-        if (!data) return;
-        currentPool = data.pool || [];
-        usedCodes = data.usedCodes || {};
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('total-count').innerText = currentPool.length + " 抽";
-        checkStatus();
-    });
+        let currentPool = [];
+        let usedCodes = {};
 
-    function checkStatus() {
-        const name = document.getElementById('user-name').value.trim();
-        const code = document.getElementById('draw-code').value.trim().toUpperCase();
-        const btn = document.getElementById('draw-btn');
-        
-        if (currentPool.length === 0) {
-            btn.innerText = "已全數售罄";
-            btn.disabled = true;
-        } else if (name && code) {
-            btn.innerText = "開始抽獎！";
-            btn.disabled = false;
-        } else {
-            btn.innerText = "請輸入完整資訊";
-            btn.disabled = true;
-        }
-    }
-
-    async function draw() {
-        const name = document.getElementById('user-name').value.trim();
-        const code = document.getElementById('draw-code').value.trim().toUpperCase();
-
-        // 檢查代碼是否用過
-        if (usedCodes[code]) {
-            alert("此代碼已被 " + usedCodes[code] + " 使用過囉！");
-            return;
-        }
-
-        db.ref().transaction((data) => {
-            if (data && data.pool && data.pool.length > 0) {
-                const p = data.pool;
-                const idx = Math.floor(Math.random() * p.length);
-                const winGrade = p.splice(idx, 1)[0]; // 抽中一個等級 (如 "S")
-                
-                if (!data.usedCodes) data.usedCodes = {};
-                data.usedCodes[code] = name; // 紀錄使用者
-                
-                window.lastWin = winGrade;
-                return data;
-            }
-        }, (err, committed) => {
-            if (committed) {
-                showResult(window.lastWin);
-            } else {
-                alert("抽獎失敗，請稍後再試！");
-            }
+        db.ref().on('value', (snap) => {
+            const data = snap.val();
+            currentPool = data?.pool || [];
+            usedCodes = data?.usedCodes || {};
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('total-count').innerText = currentPool.length + " 抽";
+            checkStatus();
         });
-    }
 
-    // --- 3. 關鍵修正：讓程式能在清單中找到對應等級的圖片 ---
-    function showResult(grade) {
-        // 從你的 cardConfig 中篩選出所有符合該等級的選項
-        const matches = Object.values(cardConfig).filter(item => item.grade === grade);
-        
-        // 隨機選出一張該等級的圖片 (增加驚喜感)
-        const res = matches.length > 0 
-            ? matches[Math.floor(Math.random() * matches.length)] 
-            : { name: "未知獎項", url: "" };
+        function checkStatus() {
+            const name = document.getElementById('user-name').value.trim();
+            const code = document.getElementById('draw-code').value.trim().toUpperCase();
+            const btn = document.getElementById('draw-btn');
 
-        document.getElementById('msg').style.display = 'none';
-        const img = document.getElementById('card-img');
-        img.src = res.url;
-        img.style.display = 'block';
-        document.getElementById('card-name').innerText = "【" + grade + "賞】" + res.name;
-    }
-
-    // --- 4. 初始化功能 (裝填 631 張獎券) ---
-    function initPool() {
-        const config = { "S": 4, "A": 4, "B": 17, "C": 18, "D": 33, "E": 188, "F": 366 };
-        let newPool = [];
-        for (let g in config) {
-            for (let i = 0; i < config[g]; i++) {
-                newPool.push(g);
+            if (currentPool.length === 0) {
+                btn.innerText = "已全數售罄";
+                btn.disabled = true;
+            } else if (usedCodes[code]) {
+                btn.innerText = "此代碼已使用";
+                btn.disabled = true;
+            } else if (name && code) {
+                btn.innerText = "開始抽獎！";
+                btn.disabled = false;
+            } else {
+                btn.innerText = "請輸入資訊";
+                btn.disabled = true;
             }
         }
-        // 洗牌
-        for (let i = newPool.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [newPool[i], newPool[j]] = [newPool[j], newPool[i]];
+
+        async function draw() {
+            const name = document.getElementById('user-name').value.trim();
+            const code = document.getElementById('draw-code').value.trim().toUpperCase();
+            const btn = document.getElementById('draw-btn');
+            btn.disabled = true;
+            btn.innerText = "抽獎中...";
+
+            db.ref().transaction((data) => {
+                if (data && data.pool && data.pool.length > 0) {
+                    const p = data.pool;
+                    const idx = Math.floor(Math.random() * p.length);
+                    const winGrade = p.splice(idx, 1)[0];
+                    if (!data.usedCodes) data.usedCodes = {};
+                    data.usedCodes[code] = name;
+                    window.lastWin = winGrade;
+                    return data;
+                }
+            }, (err, committed) => {
+                if (committed) {
+                    showResult(window.lastWin);
+                } else {
+                    alert("抽獎失敗或獎品已抽完！");
+                    checkStatus();
+                }
+            });
         }
-        db.ref().update({
-            pool: newPool,
-            usedCodes: {}
-        }).then(() => alert("🎉 631 張獎券裝填完畢！"));
-    }
-</script>
+
+        function showResult(grade) {
+            const matches = Object.values(cardConfig).filter(item => item.grade === grade);
+            const res = matches.length > 0 ? matches[Math.floor(Math.random() * matches.length)] : { name: "未知獎項", url: "" };
+            
+            document.getElementById('msg').style.display = 'none';
+            const img = document.getElementById('card-img');
+            img.src = res.url;
+            img.style.display = 'block';
+            document.getElementById('card-name').innerText = res.name;
+        }
+
+        function initPool() {
+            const config = { "S": 4, "A": 4, "B": 17, "C": 18, "D": 33, "E": 188, "F": 366 };
+            let newPool = [];
+            for (let g in config) { for (let i = 0; i < config[g]; i++) { newPool.push(g); } }
+            for (let i = newPool.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [newPool[i], newPool[j]] = [newPool[j], newPool[i]];
+            }
+            db.ref().update({ pool: newPool, usedCodes: {} }).then(() => alert("🎉 獎池已補滿 631 抽！"));
+        }
+    </script>
+</body>
+</html>
