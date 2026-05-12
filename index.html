@@ -496,13 +496,11 @@
 
         let currentPool = [];
         let isRolling = false;
-        const totalInitial = cardConfig.reduce((s, c) => s + c.count, 0);
 
         // 監聽雲端數據
         db.ref('pool').on('value', (snap) => {
             const data = snap.val();
             if (!data || data.length === 0) {
-                // 如果後台 pool 被刪除，則自動根據 cardConfig 重新初始化
                 initPool(); 
             } else {
                 currentPool = data;
@@ -549,24 +547,13 @@
                 rollText.innerText = randomName;
             }, 80);
 
+            // --- 修改後的隨機抽獎邏輯 ---
             db.ref('pool').transaction((p) => {
                 if (p && p.length > 0) {
-                    const consumed = totalInitial - p.length;
-                    const ratio = consumed / totalInitial;
-                    let candidates = [];
-                    p.forEach((id, idx) => {
-                        const card = cardConfig.find(c => c.id === id);
-                        // S/A 賞解鎖機制 (抽滿 80% 才出大獎)
-                        if (card.grade === "S" || card.grade === "A") {
-                            if (ratio >= 0.8) candidates.push(idx);
-                        } else {
-                            candidates.push(idx);
-                        }
-                    });
-                    if (candidates.length === 0) candidates = p.map((_, i) => i);
-                    const finalIdx = candidates[Math.floor(Math.random() * candidates.length)];
-                    window.lastDraw = p[finalIdx];
-                    p.splice(finalIdx, 1);
+                    // 直接從現有獎池隨機選一個位置
+                    const randomIndex = Math.floor(Math.random() * p.length);
+                    window.lastDraw = p[randomIndex]; // 記錄抽中的 ID
+                    p.splice(randomIndex, 1);        // 從獎池移除
                     return p;
                 }
                 return;
