@@ -547,14 +547,29 @@
                 rollText.innerText = randomName;
             }, 80);
 
-            // --- 修改後的隨機抽獎邏輯 ---
             db.ref('pool').transaction((p) => {
                 if (p && p.length > 0) {
-                    // 直接從現有獎池隨機選一個位置
-                    const randomIndex = Math.floor(Math.random() * p.length);
-                    window.lastDraw = p[randomIndex]; // 記錄抽中的 ID
-                    p.splice(randomIndex, 1);        // 從獎池移除
+                    // --- 加權隨機計算開始 ---
+                    let weightedIndices = [];
+                    p.forEach((cardId, index) => {
+                        const card = cardConfig.find(c => c.id === cardId);
+                        
+                        // 設定權重：S 和 A 賞在選擇時佔 3 個名額，其餘佔 1 個
+                        // 這樣抽中 S/A 的機率會變成原本的 3 倍
+                        let weight = (card.grade === "S" || card.grade === "A") ? 5 : 1;
+                        
+                        for (let i = 0; i < weight; i++) {
+                            weightedIndices.push(index);
+                        }
+                    });
+
+                    // 從加權後的名單中選一個
+                    const finalSelectionIndex = weightedIndices[Math.floor(Math.random() * weightedIndices.length)];
+                    window.lastDraw = p[finalSelectionIndex];
+                    
+                    p.splice(finalSelectionIndex, 1); // 從原獎池移除
                     return p;
+                    // --- 加權隨機計算結束 ---
                 }
                 return;
             }, (err, committed) => {
@@ -575,7 +590,6 @@
                 }, 1500);
             });
         }
-
         function saveLocalRecord(cardName) {
             let history = JSON.parse(localStorage.getItem('myDrawHistory')) || [];
             history.unshift({ name: cardName, time: new Date().toLocaleTimeString() });
