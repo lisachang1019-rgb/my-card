@@ -15,18 +15,11 @@
 
     // 卡片資訊池 (請在此處貼上您的 422 條資料)
     const cardConfig = [
-        {grade:"F", name:"F賞-13雙人卡", count:3, url:"https://i.postimg.cc/vHGfL9WX/10.jpg"},
-{grade:"F", name:"F賞-37雙人卡", count:1, url:"https://i.postimg.cc/Y2zm99Jf/100.jpg"},
-{grade:"F", name:"F賞-3單人卡", count:1, url:"https://i.postimg.cc/TY25Wx6m/101.jpg"},
-{grade:"F", name:"F賞-13雙人卡", count:1, url:"https://i.postimg.cc/TY25Wx6D/102.jpg"},
-{grade:"F", name:"F賞-23雙人卡", count:1, url:"https://i.postimg.cc/VLs0bw8X/103.jpg"},
-{grade:"F", name:"F賞-3單人卡", count:1, url:"https://i.postimg.cc/L64gZSpt/104.jpg"},
-{grade:"F", name:"F賞-3單人卡", count:1, url:"https://i.postimg.cc/Dyf4bhTd/105.jpg"},
-{grade:"F", name:"F賞-13雙人卡", count:1, url:"https://i.postimg.cc/Kvc3gb2N/106.jpg"},
-{grade:"F", name:"F賞-3單人卡", count:1, url:"https://i.postimg.cc/wTxRszp2/107.jpg"},
-{grade:"F", name:"F賞-13雙人卡", count:1, url:"https://i.postimg.cc/025KJvs0/108.jpg"}
-
-    ];
+    {grade:"F", name:"F賞-13雙人卡", count:3, url:"https://i.postimg.cc/vHGfL9WX/10.jpg"},
+    {grade:"F", name:"F賞-37雙人卡", count:1, url:"https://i.postimg.cc/Y2zm99Jf/100.jpg"},
+    {grade:"F", name:"F賞-3單人卡", count:1, url:"https://i.postimg.cc/TY25Wx6m/101.jpg"},
+    // ... 依此類推 ...
+];
 
     // 監聽雲端資料
     db.ref().on('value', (snap) => {
