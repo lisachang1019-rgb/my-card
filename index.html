@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🎪 雲端一番賞 🎪</title>
+    <title>時團試玩一番賞</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <style>
@@ -22,7 +22,7 @@
 </head>
 <body>
     <div class="container">
-        <h2>🎪 雲端一番賞 🎪</h2>
+        <h2>時團試玩一番賞</h2>
         <div class="pool-card">
             <div style="font-size: 14px; color: #888;">目前獎箱剩餘</div>
             <div class="total-rem" id="total-count">--</div>
@@ -528,7 +528,7 @@ let currentPool = [];
                     let weightedIndices = [];
                     p.forEach((id, index) => {
                         const card = cardConfig.find(c => c.id === id);
-                        let weight = (card && (card.grade === "S" || card.grade === "A")) ? 3 : 1;
+                        let weight = (card && (card.grade === "S" || card.grade === "A"||card.grade === "B")) ? 15 : 1;
                         for (let i = 0; i < weight; i++) weightedIndices.push(index);
                     });
 
